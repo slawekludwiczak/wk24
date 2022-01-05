@@ -2,19 +2,23 @@ package pl.wk.zadanie24;
 
 import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public class TransactionDAO {
 
+    private final DataSource dataSource;
     private final Connection connection;
 
-    public TransactionDAO() {
+    public TransactionDAO(DataSource dataSource) {
+        this.dataSource = dataSource;
         try {
-            this.connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/budget", "root", "admin");
+            this.connection = dataSource.getConnection();
         } catch (SQLException e) {
             throw new RuntimeException();
         }
@@ -29,6 +33,7 @@ public class TransactionDAO {
             preparedStatement.setString(4, transaction.getDate().toString());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException();
         }
     }
@@ -60,11 +65,11 @@ public class TransactionDAO {
         }
     }
 
-    public Optional<List<Transaction>> findInboundTransactions() {
+    public List<Transaction> findInboundTransactions() {
         return findTransactionsByType(TransactionType.IN);
     }
 
-    public Optional<List<Transaction>> findOutboundTransactions() {
+    public List<Transaction> findOutboundTransactions() {
         return findTransactionsByType(TransactionType.OUT);
     }
 
@@ -84,19 +89,19 @@ public class TransactionDAO {
         }
     }
 
-    private Optional<List<Transaction>> findTransactionsByType(TransactionType transactionType) {
+    private List<Transaction> findTransactionsByType(TransactionType transactionType) {
         List<Transaction> transactions = new ArrayList<>();
         try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM budget WHERE type=?;")) {
             preparedStatement.setString(1, transactionType.toString());
             ResultSet resultSet = preparedStatement.executeQuery();
-            if (!resultSet.isBeforeFirst()) {
-                return Optional.empty();
+            if (!resultSet.next()) {
+                return Collections.emptyList();
             } else {
-                while(resultSet.next()) {
+                do {
                     Transaction transaction = getTransaction(resultSet);
                     transactions.add(transaction);
-                }
-                return Optional.of(transactions);
+                } while(resultSet.next());
+                return transactions;
             }
         } catch (SQLException e) {
             throw new RuntimeException();

@@ -10,10 +10,14 @@
 </head>
 <body>
     <h3 th:text="|Transakcje *{listName}|"></h3>
-    <ul>
+    <ul th:if="${not transactions.isEmpty()}">
         <li th:each="transaction:${transactions}">
             <p th:text="|*{transaction.toString}|"></p>
+            <a th:href="|@{/edit?id=}${transaction.id}|">Edytuj</a>
         </li>
     </ul>
+    <p th:if="${transactions.isEmpty()}">
+        Brak transakcji do wyświetlenia
+    </p>
 </body>
 </html>

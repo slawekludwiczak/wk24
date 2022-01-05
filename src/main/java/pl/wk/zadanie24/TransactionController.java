@@ -3,6 +3,7 @@ package pl.wk.zadanie24;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -31,7 +32,7 @@ public class TransactionController {
         return "form";
     }
 
-    @RequestMapping("/save")
+    @PostMapping("/save")
     public String save(Transaction transaction) {
         transactionDAO.save(transaction);
         return "redirect:/";
@@ -57,7 +58,7 @@ public class TransactionController {
         return "edit_id";
     }
 
-    @RequestMapping("/edit")
+    @GetMapping("/edit")
     public String edit(Model model, @RequestParam(name = "index", required = false) int index) {
         model.addAttribute("transactionTypes", TransactionType.values());
         Optional<Transaction> optionalTransaction = transactionDAO.findTransactionById(index);
@@ -77,25 +78,18 @@ public class TransactionController {
     }
 
 
-    @GetMapping("/inbound")
-    public String inbound(Model model) {
-        return printList(model, transactionDAO::findInboundTransactions, "przychodzące");
-    }
-
-    @GetMapping("/outbound")
-    public String outbound(Model model) {
-        return printList(model, transactionDAO::findOutboundTransactions, "wychodzące");
-    }
-
-    private String printList(Model model, Supplier<Optional<List<Transaction>>> optionalSupplier, String redirectionName) {
-        model.addAttribute("listName", redirectionName);
-        Optional<List<Transaction>> optional = optionalSupplier.get();
-        if (optional.isPresent()) {
-            List<Transaction> transactions = optional.get();
-            model.addAttribute("transactions", transactions);
-            return "transactions";
+    @GetMapping("/list")
+    public String inbound(@RequestParam String type, Model model) {
+        List<Transaction> transactions;
+        if (type.equalsIgnoreCase("in")) {
+            transactions = transactionDAO.findInboundTransactions();
+            model.addAttribute("listName", "Przychody");
         } else {
-            return "empty_list";
+            transactions = transactionDAO.findOutboundTransactions();
+            model.addAttribute("listName", "Wydatki");
         }
+        model.addAttribute("transactions", transactions);
+        return "transactions";
     }
+
 }
